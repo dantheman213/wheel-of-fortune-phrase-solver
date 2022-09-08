@@ -9,6 +9,8 @@ import (
 )
 
 var data map[string][]string
+var completedPhrase [][]string
+var currentPhraseIdx int
 
 func loadWordMap() {
 	data = make(map[string][]string)
@@ -51,6 +53,7 @@ func comparePhraseWordAndSearchWord(phraseWord, searchWord string) {
 
 	if foundWord {
 		fmt.Println(searchWord)
+		addFoundWord(currentPhraseIdx, searchWord)
 	}
 }
 
@@ -73,6 +76,23 @@ func unknownFirstLetter(phraseWord string) {
 	}
 }
 
+func addFoundWord(idx int, word string) {
+	completedPhrase[idx] = append(completedPhrase[idx], word)
+}
+
+func printAllPhraseGuesses() {
+	count := 0
+
+	dst := make([]string, len(completedPhrase))
+	for ii := NewIdxVectorFromSlices(completedPhrase); !ii.Done(); ii.Next() {
+		GetTo(completedPhrase, dst, ii)
+		fmt.Printf("%v\n", dst)
+		count += 1
+	}
+
+	fmt.Printf("Found %d possible guesses\n\n", count)
+}
+
 func main() {
 	loadWordMap()
 	fmt.Printf("Note: Use '-' for unknown letters\n\n")
@@ -81,11 +101,23 @@ func main() {
 		var input string
 
 		fmt.Printf("Enter a phrase: ")
-		fmt.Scanln(&input)
+		scanner := bufio.NewScanner(os.Stdin)
+		if scanner.Scan() {
+			input = scanner.Text()
+		}
+
+		if strings.TrimSpace(input) == "" {
+			continue
+		}
 
 		phraseWords := strings.Split(input, " ")
+		completedPhrase = make([][]string, len(phraseWords))
+		for i := 0; i < len(completedPhrase); i++ {
+			completedPhrase[i] = make([]string, 0)
+		}
 
-		for _, phraseWord := range phraseWords {
+		for i, phraseWord := range phraseWords {
+			currentPhraseIdx = i
 			phraseWord = strings.ToLower(phraseWord)
 
 			fmt.Printf("\npossibilities for '%s':\n", phraseWord)
@@ -96,5 +128,8 @@ func main() {
 				knowFirstLetter(phraseWord)
 			}
 		}
+
+		printAllPhraseGuesses()
+		fmt.Printf("complete!\n")
 	}
 }
